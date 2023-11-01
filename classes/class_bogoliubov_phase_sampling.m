@@ -1,4 +1,4 @@
-classdef class_OU_phase_sampling < class_physical_parameters & handle
+classdef class_bogoliubov_phase_sampling < class_physical_parameters & handle
     properties
         temperature
         mean_density
@@ -12,7 +12,10 @@ classdef class_OU_phase_sampling < class_physical_parameters & handle
 
     methods
         %Generate the constructor
-        function obj = class_OU_phase_sampling(temperature, coupling_J, mean_density, condensate_length)
+        function obj = class_bogoliubov_phase_sampling(temperature, coupling_J, mean_density, condensate_length)
+            % Run the parent class constructor
+            obj = obj@class_physical_parameters();
+            % Set up some of the physics parameters, possibly to default
             if nargin < 2
                 obj.coupling_strength_J = obj.default_coupling_J;
             else
@@ -63,5 +66,5 @@ classdef class_OU_phase_sampling < class_physical_parameters & handle
             obj.fourier_cosine_coeffs = cosine_coeffs;
             obj.fourier_sine_coeffs = sine_coeffs;
         end
-    end
-end 
+    end %end of methods
+end %end of class

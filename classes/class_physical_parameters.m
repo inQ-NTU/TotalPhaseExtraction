@@ -21,7 +21,7 @@ classdef class_physical_parameters < handle
         x_max = 50e-6;
         default_separation_distance = 3e-6; %3 microns
         default_expansion_time = 15e-3; %15 ms
-        default_coupling_J = 2*pi; %default tunnel coupling 2*pi*1Hz
+        default_coupling_J = 0.5; %default tunnel coupling 2*pi*1Hz
         %default_coupling_J = 1;
 
         %default insitu density profile string 

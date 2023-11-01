@@ -332,7 +332,7 @@ classdef class_interference_pattern< class_physical_parameters
       
       function f = normalized_Gaussian(x, mean, standard_deviation)
             %the normalized Gaussian functions are given as
-            f = ( 1 / ((2*pi)*standard_deviation)^(1/4))*exp(- ((x - mean).^2)/(2*standard_deviation^2) ) ;
+            f = (1/(pi*standard_deviation^2)^(1/4))*exp(- (x - mean).^2/(2*standard_deviation^2)) ;
       end
 
       %Step function for defining longitudinal density

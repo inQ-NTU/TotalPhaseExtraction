@@ -8,10 +8,12 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
 
         %intermediate variables
         wavevec_k
+        
         %output
         com_phase_cosine_spectrum
         com_phase_sine_spectrum
-        %com_phase_profile
+        ripple_fourier_coeffs
+        com_phase_profile
     end
 
     methods
@@ -33,35 +35,60 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
             obj.z_grid = z_grid;
             obj.wavevec_k = 2*pi/obj.condensate_length;
         end
+        
+        %Flag deconvolution -> mitigate the effect of rectangular windowing
+        %Default value is 1 (activated), to deactivate simply set it to 0
+        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum(obj, n_max_fourier, flag_deconvolution)
+            if nargin < 3
+                flag_deconvolution = 1;
+            end
 
+            if flag_deconvolution %extend convolved signal to 2n-1
+                n_loop = 2*n_max_fourier-1;
+            else
+                n_loop = n_max_fourier;
+            end
 
-        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum(obj, n_max_fourier)
+            %initialize the outputs
             cosineCoeffs = zeros(1, n_max_fourier);
             sineCoeffs = zeros(1,n_max_fourier);
+            complex_fourier_coeffs = zeros(1,n_loop);
 
+            %Compute and initialize parameters
             lt = sqrt(obj.hbar*obj.expansion_time/obj.m);
             eps_t = lt/obj.condensate_length; 
-            
             dz = obj.z_grid(2) - obj.z_grid(1);
             ripple = obj.density_ripple;
-            %plot(ripple)
-            %hold on
+            
+            %Making sure zero constant shift in Fourier decomposition
             ripple = ripple - sum(ripple)*dz/obj.condensate_length; 
-            %plot(ripple)
-            for n = 1:n_max_fourier
+            
+            %Start computing Fourier coefficients
+            for n = 1:n_loop 
                 fn = 0;
                 for i = 1:length(obj.z_grid)
                     fn = fn + ripple(i)*exp(-1j*n*obj.wavevec_k*obj.z_grid(i));
                 end
-                fn = -(dz/obj.condensate_length)*(1/((pi*eps_t*n)^2))*fn;
-                %disp( -(dz/obj.condensate_length)*(1/((pi*eps_t*n)^2)))
-                cosineCoeffs(n) = real(fn);
-                sineCoeffs(n) = -imag(fn);
+                complex_fourier_coeffs(n) = (dz/obj.condensate_length)*fn;
+            end
+
+            %DECONVOLUTION STEP
+            if flag_deconvolution
+                complex_fourier_coeffs = (1/n_max_fourier)*deconv(complex_fourier_coeffs, obj.window_spectrum(n_max_fourier), Method = "least-squares");
+            end
+
+            %Assigning outputs
+            obj.ripple_fourier_coeffs = complex_fourier_coeffs;
+            for n = 1:n_max_fourier
+                complex_fourier_coeffs(n) = -(1/((pi*eps_t*n)^2))*complex_fourier_coeffs(n);
+                cosineCoeffs(n) = real(complex_fourier_coeffs(n));
+                sineCoeffs(n) = -imag(complex_fourier_coeffs(n));
             end
             obj.com_phase_cosine_spectrum = cosineCoeffs;
             obj.com_phase_sine_spectrum = sineCoeffs;
         end
 
+        %Reconstructing common phase in real space
         function com_phase_profile = extract_com_profile(obj, z_grid)
             com_phase_profile = zeros(1,length(z_grid));
             n_max_fourier = length(obj.com_phase_sine_spectrum);
@@ -72,6 +99,19 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
                     com_phase_profile(i) = com_phase_profile(i)+cosine_term+sine_term;
                 end
             end
+            obj.com_phase_profile = com_phase_profile;
+        end
+
+        %Spectrum of rectangular window - needed for deconvolution
+        function ws = window_spectrum(obj, n_max_fourier)
+            ws = zeros(1, n_max_fourier);
+            dz = obj.z_grid(2) - obj.z_grid(1);
+            for n = 1:n_max_fourier
+                for i = 1:length(obj.z_grid)
+                    ws(n) = ws(n) + exp(-1j*n*obj.wavevec_k*obj.z_grid(i));
+                end
+            end
+            ws = (dz/obj.condensate_length)*ws;
         end
     end
     
