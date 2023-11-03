@@ -1,3 +1,10 @@
+%This is a class to stochastically sample phase profiles in 1D Bose gas
+%interferometry experiment
+
+%The scheme is based on the reference below
+%Stimming, H. P., Mauser, N. J., Schmiedmayer, J., & Mazets, I. E. (2010). 
+% Fluctuations and stochastic processes in one-dimensional many-body quantum systems. PRL , 105(1), 015301.
+
 classdef class_bogoliubov_phase_sampling < class_physical_parameters & handle
     properties
         temperature
@@ -38,7 +45,7 @@ classdef class_bogoliubov_phase_sampling < class_physical_parameters & handle
 
 
         %Stochastic sampling 
-        function phase_samples = generate_OU_samples(obj, max_n_fourier, z_resolution, N_samples)
+        function phase_samples = generate_samples(obj, max_n_fourier, z_resolution, N_samples)
             if nargin < 4
                 N_samples = 1;
             end
