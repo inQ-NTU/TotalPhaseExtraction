@@ -38,21 +38,12 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
         
         %Flag deconvolution -> mitigate the effect of rectangular windowing
         %Default value is 1 (activated), to deactivate simply set it to 0
-        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum(obj, n_max_fourier, flag_deconvolution)
-            if nargin < 3
-                flag_deconvolution = 1;
-            end
-
-            if flag_deconvolution %extend convolved signal to 2n-1
-                n_loop = 2*n_max_fourier-1;
-            else
-                n_loop = n_max_fourier;
-            end
+        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum(obj, n_max_fourier)
 
             %initialize the outputs
             cosineCoeffs = zeros(1, n_max_fourier);
             sineCoeffs = zeros(1,n_max_fourier);
-            complex_fourier_coeffs = zeros(1,n_loop);
+            complex_fourier_coeffs = zeros(1,n_max_fourier);
 
             %Compute and initialize parameters
             lt = sqrt(obj.hbar*obj.expansion_time/obj.m);
@@ -64,17 +55,12 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
             ripple = ripple - sum(ripple)*dz/obj.condensate_length; 
             
             %Start computing Fourier coefficients
-            for n = 1:n_loop 
+            for n = 1:n_max_fourier
                 fn = 0;
                 for i = 1:length(obj.z_grid)
                     fn = fn + ripple(i)*exp(-1j*n*obj.wavevec_k*obj.z_grid(i));
                 end
                 complex_fourier_coeffs(n) = (dz/obj.condensate_length)*fn;
-            end
-
-            %DECONVOLUTION STEP
-            if flag_deconvolution
-                complex_fourier_coeffs = (1/n_max_fourier)*deconv(complex_fourier_coeffs, obj.window_spectrum(n_max_fourier), Method = "least-squares");
             end
 
             %Assigning outputs
