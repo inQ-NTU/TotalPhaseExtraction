@@ -87,18 +87,6 @@ classdef class_common_phase_spectrum < class_physical_parameters & handle
             end
             obj.com_phase_profile = com_phase_profile;
         end
-
-        %Spectrum of rectangular window - needed for deconvolution
-        function ws = window_spectrum(obj, n_max_fourier)
-            ws = zeros(1, n_max_fourier);
-            dz = obj.z_grid(2) - obj.z_grid(1);
-            for n = 1:n_max_fourier
-                for i = 1:length(obj.z_grid)
-                    ws(n) = ws(n) + exp(-1j*n*obj.wavevec_k*obj.z_grid(i));
-                end
-            end
-            ws = (dz/obj.condensate_length)*ws;
-        end
     end
     
     methods (Static)
