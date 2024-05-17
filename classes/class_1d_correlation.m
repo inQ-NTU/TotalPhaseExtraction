@@ -6,6 +6,7 @@ classdef class_1d_correlation
         all_phase_profiles
 
         %inferred
+        referenced_phase_profiles
         average_phase_profile
         longitudinal_resolution
         nmb_of_sampled_profiles
@@ -34,7 +35,19 @@ classdef class_1d_correlation
             end
             avg_phase_profile = (1/obj.nmb_of_sampled_profiles)*avg_phase_profile;
             obj.average_phase_profile = avg_phase_profile;
+        end
 
+        %Function to reference the phase profiles
+        function ref_phases = reference_phase_profiles(obj, phase_profiles_data)
+            if nargin < 2
+                phase_profiles_data = obj.all_phase_profiles;
+            end
+
+            ref_phases = zeros(size(phase_profiles_data));
+            for i = 1:obj.nmb_of_sampled_profiles
+                ref_phases(i,:) = phase_profiles_data(i,:) - phase_profiles_data(i, floor(obj.longitudinal_resolution/2));
+            end
+            obj.referenced_phase_profiles = ref_phases; 
         end
 
         %Function to compute fourth order correlation G(z1, z2, z3, z4) function for fixed z3
@@ -140,16 +153,33 @@ classdef class_1d_correlation
         %Loop end
     end
 
+
+    %function to compute g1 function
+    function g1 = g1_corr(obj, phase_profiles_data)
+        if nargin < 2
+            phase_profiles_data = obj.all_phase_profiles;
+        end
+        g1 = zeros(obj.longitudinal_resolution, obj.longitudinal_resolution);
+        for i = 1:obj.nmb_of_sampled_profiles
+            for j = 1:obj.longitudinal_resolution
+                for k = 1:obj.longitudinal_resolution
+                    g1(j,k) = g1(j,k)+(cos(phase_profiles_data(i,j) - phase_profiles_data(i,k)));
+                end
+            end
+        end
+        g1  = (1/obj.nmb_of_sampled_profiles)*g1;
+    end
+
     %function to compute correlation in Fourier space
     function fourier_cov = fourier_correlation(obj, phase_profiles_data)
         if nargin<2
             phase_profiles_data = obj.all_phase_profiles;
         end 
         %Compute fft for each profile
-        fourier_data = transpose(abs(fft(transpose(phase_profiles_data)))*(1/sqrt(size(phase_profiles_data,2))));
+        fourier_data = transpose(abs(fft(transpose(phase_profiles_data)))*(1/size(phase_profiles_data,2)));
         
         %single sampling - remove frequency above Nyquist frequency
-        l = size(fourier_data,2)/2+1;
+        l = floor(size(fourier_data,2)/2+1);
         fourier_data = fourier_data(:,1:l);
 
         %Compute correlation
