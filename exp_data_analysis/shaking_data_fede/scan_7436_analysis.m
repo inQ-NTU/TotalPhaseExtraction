@@ -1,4 +1,4 @@
-clear all; close all
+clear all; close all;
 addpath('../../classes/')
 addpath('../../plotting_func/')
 addpath('results_shaking/scan7436/')
