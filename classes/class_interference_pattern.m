@@ -14,6 +14,7 @@ classdef class_interference_pattern< class_physical_parameters
         separation_distance_d
         condensate_length_Lz
         buffer_length
+        integration_buffer_length
 
         %flags
         flag_interaction_broadening  %0: no interaction broadening, 
@@ -121,8 +122,11 @@ classdef class_interference_pattern< class_physical_parameters
                 (obj.condensate_length_Lz/2)+obj.buffer_length, obj.nmb_output_points_z+2*obj.nmb_buffer_points_z);
             
             %5.3 Integration grid
-            obj.nmb_integration_points_z = floor((2.6/obj.expansion_time)+238.23); %phenomenological formula for dealing with short expansion time
-            obj.integration_grid_z = linspace(-obj.condensate_length_Lz/2, obj.condensate_length_Lz/2, obj.nmb_integration_points_z);
+            obj.integration_buffer_length = 10e-6;%10 microns buffer for integration length
+            %obj.nmb_integration_points_z = floor((2.6/obj.expansion_time)+238.23); %phenomenological formula for dealing with short expansion time
+            obj.nmb_integration_points_z = 600;
+            obj.integration_grid_z = linspace(-obj.condensate_length_Lz/2-obj.integration_buffer_length, ...
+                obj.condensate_length_Lz/2+obj.integration_buffer_length, obj.nmb_integration_points_z);
             
             % 5.4 Setup of transversal grid
             
