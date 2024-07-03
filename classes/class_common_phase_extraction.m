@@ -168,5 +168,15 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
             end
             fcoh = abs(fcoh/length(phase_residue));
         end
+        %dot fidelity
+        function fdot = fidelity_dot(phase_profile_1, phase_profile_2)
+            fdot = dot(phase_profile_1,phase_profile_2)/...
+                (norm(phase_profile_1).*norm(phase_profile_2));
+        end
+
+        %Squared error
+        function aerr = mean_squared_error(phase_profile_1, phase_profile_2)
+            aerr = mean((phase_profile_1 - phase_profile_2).^2);  
+        end
      end
 end %End class
