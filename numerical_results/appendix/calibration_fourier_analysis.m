@@ -1,7 +1,7 @@
 clear all;close all;
 addpath('../../classes')
 addpath('../../plotting_func')
-addpath('../Data')
+addpath('../Data_new')
 load('scan_11ms_calibrate_LE.mat')
 com_phase_in = com_phase;
 com_phase_out_LE = output_com_phase;
@@ -26,7 +26,7 @@ fourier_LE = diag(corr_LE.fourier_correlation());
 fourier_LE_and_RP = diag(corr_LE_and_RP.fourier_correlation());
 fourier_LE_and_DF_and_RP = diag(corr_LE_and_DF_and_RP.fourier_correlation());
 
-idx = 999;
+idx = 121;
 grid_dens = grid_dens*1e6;
 cut_grid_dens = cut_grid_dens*1e6;
 f = tight_subplot(1,3, [0.08, 0.1], [0.3, 0.1], [0.12, 0.12]);
@@ -67,15 +67,15 @@ hold on
 plot(1:4, fourier_LE_and_RP(2:5),'x-', 'Color','Black', 'LineWidth',1.1,'MarkerSize', 8)
 plot(1:4, fourier_LE_and_DF_and_RP(2:5),'^-', 'Color','red', 'LineWidth',1.1)
 xlim([1,4])
-legend('LE', 'LE + RP', 'LE + RP + DF', 'FontSize', 10)
+legend('LE', 'LE + RP', 'LE + RP + DF', 'FontSize', 8)
 xlabel('Mode index $p$', 'Interpreter','latex')
 ylabel('$\langle |A_p|^2\rangle$', 'Interpreter','latex')
 title('$\mathbf{c}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.1,0.82]);
 ax = gca;
 ax.LineWidth = 1.1;
 ax.YAxis.Exponent = -2;
-ylim([0,0.09])
+ylim([0,0.035])
 xticks([1,2,3,4])
-yticks([0,0.03,0.06,0.09])
+yticks([0,0.01,0.02,0.03])
 
 set(f, 'FontName', 'Times', 'FontSize', 16)

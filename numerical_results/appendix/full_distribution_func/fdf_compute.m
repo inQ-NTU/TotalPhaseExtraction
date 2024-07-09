@@ -1,10 +1,10 @@
 clear all;
 close all;
-addpath('../../Data/')
+addpath('../../Data_new/')
 
 load('scan_11ms_50nk_no_imaging.mat')
 
-integration_length_l = 30e-6;
+integration_length_l = 60e-6;
 
 pixel_size = abs(grid_dens(2)-grid_dens(1));
 integration_pixnum = floor(integration_length_l/pixel_size);
@@ -37,4 +37,4 @@ histogram(integrated_contrast_in)
 hold on
 histogram(integrated_contrast_out)
 
-save('fdf_30microns.mat', 'integrated_contrast_in', 'integrated_contrast_out')
+%save('fdf_60microns.mat', 'integrated_contrast_in', 'integrated_contrast_out')

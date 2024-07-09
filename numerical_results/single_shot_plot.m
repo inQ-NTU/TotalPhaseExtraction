@@ -1,9 +1,9 @@
 clear all; close all;
-addpath('Data/')
+addpath('Data_new/')
 addpath('../plotting_func/')
 load('scan_11ms_50nk_no_imaging.mat')
 
-chosen_idx = 512;%343 %512
+chosen_idx = 456;
 grid_dens = grid_dens*1e6;
 cut_grid_dens = cut_grid_dens*1e6;
 

@@ -1,12 +1,12 @@
 clear all; close all;
 addpath('../../plotting_func/')
 addpath('../../classes')
-addpath('../Data/')
+addpath('../Data_new/')
 
 load('input_comparison_imaging.mat')
 input_com_phase = com_phase;
 
-load('scan_11ms_50nk_no_imaging.mat')
+load('scan_11ms_50nk_no_imaging_comparison.mat')
 output_com_phase_no_imaging = output_com_phase;
 output_density_ripple_no_imaging = density_ripple*1e-6;
 mean_density_ori = mean_density*1e-6; 
@@ -15,7 +15,7 @@ load('scan_11ms_50nk_with_imaging.mat')
 output_com_phase_with_imaging = output_com_phase;
 output_density_ripple_with_imaging = density_ripple;
 
-chosen_idx = 786;
+chosen_idx = 347;
 condensate_length = 100e-6;
 coarse_grid_dens = linspace(-condensate_length/2, condensate_length/2, size(output_density_ripple_with_imaging,2));
 

@@ -15,32 +15,32 @@ bulk_end = 40e-6; %Only extract common phase until this position (ignore edges)
 n_fourier_cutoff = 40; %maximum mode num in sampling the common phase
 ext_cutoff = 40; %maximum mode in the extraction 
 pixnumz = 201; %number of longitudinal points
-num_samples = 1; %number of phase samples
+num_samples = 10; %number of phase samples
 
 %Flags
 flag_density_fluct = 1;
 
-%Initiate sampling with Bogoliubov sampling
-%load('input_comparison_imaging.mat')
+%Sample in situ fluctuations with Bogoliubov sampling
 sampling_suite_rel = class_bogoliubov_sampling(temp_rel, mean_density);
 sampling_suite_com = class_bogoliubov_sampling(temp_com, mean_density);
-sampling_suite_density = class_bogoliubov_sampling(temp_com, mean_density);
 
 %Generate fluctuation samples
-rel_phase = sampling_suite_rel.generate_phase_samples(n_fourier_cutoff, pixnumz, num_samples);
-com_phase = sampling_suite_com.generate_phase_samples(n_fourier_cutoff, pixnumz, num_samples);
-density_fluct = sampling_suite_com.generate_density_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
+[rel_phase, rel_density_fluct] = sampling_suite_rel.generate_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
+[com_phase, com_density_fluct] = sampling_suite_com.generate_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
 
 %for calibration
 %rel_phase = zeros(num_samples, pixnumz);
 %com_phase = zeros(num_samples, pixnumz);
-%density_fluct = zeros(num_samples, pixnumz);
+%com_density_fluct = zeros(num_samples, pixnumz);
+
+%For comparison with and without imaging
+%load('input_comparison_imaging.mat')
 
 count = 0;
 %%%%%Simulating TOF and collecting density ripple data%%%%%%%
 for i = 1:num_samples
     if flag_density_fluct
-        insitu_density = mean_density + density_fluct(i,:); %adding density fluctuation into mean density
+        insitu_density = mean_density + com_density_fluct(i,:)/2; %adding density fluctuation into mean density
     else
         insitu_density = mean_density;
     end
@@ -72,5 +72,6 @@ for i = 1:num_samples
 
     count = count+1
 end
-%save('scan_11ms_calibrate_LE_RP_DF.mat', 't_tof', 'temp_com', 'temp_rel', 'mean_density', 'n_fourier_cutoff', 'ext_cutoff', 'grid_dens','cut_grid_dens', 'output_com_phase', ...
-%   'com_phase', 'rel_phase', 'density_fluct', 'flag_density_fluct', 'num_samples', 'pixnumz', 'density_ripple', 'cut_density_ripple')
+
+%save('Data_new/scan_11ms_50nk_no_imaging_comparison.mat', 't_tof', 'temp_com', 'temp_rel', 'mean_density', 'n_fourier_cutoff', 'ext_cutoff', 'grid_dens','cut_grid_dens', 'output_com_phase', ...
+%   'com_phase', 'rel_phase', 'com_density_fluct', 'flag_density_fluct', 'num_samples', 'pixnumz', 'density_ripple', 'cut_density_ripple')
