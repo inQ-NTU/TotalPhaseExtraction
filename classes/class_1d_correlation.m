@@ -1,7 +1,5 @@
-classdef class_1d_correlation
-    
+classdef class_1d_correlation < handle
     properties
-
         %input
         all_phase_profiles
 
@@ -13,11 +11,8 @@ classdef class_1d_correlation
 
         %output
         cov_matrix
-
     end
-    
-    methods
-        
+    methods 
         %implementing the constructor
         function obj = class_1d_correlation(phase_profile_matrix)
             obj.all_phase_profiles = phase_profile_matrix;
@@ -37,7 +32,8 @@ classdef class_1d_correlation
             obj.average_phase_profile = avg_phase_profile;
         end
 
-        %Function to reference the phase profiles
+        %Function to reference the phase profiles (set the midpoint to
+        %zero)
         function ref_phases = reference_phase_profiles(obj, phase_profiles_data)
             if nargin < 2
                 phase_profiles_data = obj.all_phase_profiles;
@@ -75,12 +71,7 @@ classdef class_1d_correlation
                 end
             end
         end
-
-        %Function to compute third order correlation for fixed z3 and z4
         
-
-
-
         %Function to compute correlation function of any order
         function corr = correlation_func(obj, order, phase_profiles_data)
             if nargin<3
@@ -149,10 +140,8 @@ classdef class_1d_correlation
                     end
                 end
             end
-        end
-        %Loop end
+        end %Loop end
     end
-
 
     %function to compute g1 function
     function g1 = g1_corr(obj, phase_profiles_data)
@@ -194,12 +183,9 @@ classdef class_1d_correlation
         fourier_cov = (1/obj.nmb_of_sampled_profiles)*fourier_cov;
         
     end
-    
-
-  end
-
+    end %end methods
   %%%%%%Static methods%%%%%%%%%%%%
-    methods (Static)
+  methods (Static)
         %function to compute combination (with repetition)
         %Code from https://stackoverflow.com/questions/28284671/generating-all-combinations-with-repetition-using-matlab
         function combs = nmultichoosek(values, k)
@@ -213,10 +199,8 @@ classdef class_1d_correlation
             end
         end
         
-        
         %function to compute distance between inferred and reference
         %covariance matrix
-
         %Two-norm (largest singular values)
         function dist = two_norm_distance(reference_cov, inferred_cov)
             dist = norm(reference_cov-inferred_cov)/norm(reference_cov);
@@ -231,6 +215,6 @@ classdef class_1d_correlation
         function dist = frobenius_norm_distance(reference_cov, inferred_cov)
             dist = norm(reference_cov-inferred_cov, 'fro')/norm(reference_cov, 'fro');
         end
-    end
-end
+  end %end static methods
+end %end class
             
