@@ -15,7 +15,7 @@ bulk_end = 40e-6; %Only extract common phase until this position (ignore edges)
 n_fourier_cutoff = 40; %maximum mode num in sampling the common phase
 ext_cutoff = 40; %maximum mode in the extraction 
 pixnumz = 201; %number of longitudinal points
-num_samples = 10; %number of phase samples
+num_samples = 1000; %number of phase samples
 
 %Flags
 flag_density_fluct = 1;
