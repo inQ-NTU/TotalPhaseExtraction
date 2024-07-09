@@ -6,8 +6,7 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
         expansion_time
         z_grid
         boundary_cut_ratio
-
-
+        
         %inferred intermediate variables
         mean_density_gradient
         condensate_length
@@ -53,8 +52,8 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
         end
         
 
-        %2. Function to extract common phase spectrum when the mean density is
-        %uniform
+        %2. Function to extract common phase spectrum when we ignore
+        %gradient of mean density
         function [cosineCoeffs, sineCoeffs] = extract_com_spectrum_uniform(obj, ext_cutoff)
 
             %initialize the outputs
