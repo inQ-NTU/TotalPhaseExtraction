@@ -15,7 +15,7 @@ bulk_end = 40e-6; %Only extract common phase until this position (ignore edges)
 %Simulation parameter
 n_fourier_cutoff = 40; %maximum mode num in sampling the common phase
 ext_cutoff = 40; %maximum mode in the extraction 
-pixnumz = 200; %number of longitudinal points
+pixnumz = 201; %number of longitudinal points
 num_samples = 1; %number of phase samples
 
 %Flags
@@ -26,20 +26,15 @@ sampling_suite_rel = class_bogoliubov_sampling(temp_rel, mean_density);
 sampling_suite_com = class_bogoliubov_sampling(temp_com, mean_density);
 
 %Generate fluctuation samples
-rel_phase = sampling_suite_rel.generate_phase_samples(n_fourier_cutoff, pixnumz, num_samples);
-com_phase = sampling_suite_com.generate_phase_samples(n_fourier_cutoff, pixnumz, num_samples);
-%com_phase = zeros(1,pixnumz);
-%rel_phase = zeros(1,pixnumz);
-%density_fluct = zeros(1,pixnumz);
-density_fluct = sampling_suite_com.generate_density_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
+[rel_phase, rel_density_fluct] = sampling_suite_rel.generate_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
+[com_phase, com_density_fluct] = sampling_suite_com.generate_fluct_samples(n_fourier_cutoff, pixnumz, num_samples);
 
 %%%%%3. Simulating TOF%%%%%%%
 count = 0;
 for i = 1:num_samples
     if flag_density_fluct
-        insitu_density = mean_density + density_fluct(i,:); %adding density fluctuation into mean density
+        insitu_density = mean_density + com_density_fluct(i,:)/2; %adding density fluctuation into mean density
     else
-        %insitu_density = mean_density;
         insitu_density = 'InverseParabola';
     end
     
@@ -75,9 +70,6 @@ for i = 1:num_samples
     output_com_phase(i,:) = com_phase_u;
 end
 
-%save('scan_11ms_100nK', 't_tof', 'temp_com', 'temp_rel', 'mean_density', 'n_fourier_cutoff', 'ext_cutoff', 'cut_z_grid', 'z_grid', 'output_com_phase', 'output_fidelity', ...
-%    'com_phase', 'rel_phase', 'density_fluct', 'flag_buffer', 'flag_density_fluct', 'num_samples', 'pixnumz')
-
 f = tight_subplot(1,3,[.08 .1],[.22 .12],[.15 .1]);
 z_grid = z_grid*1e6;
 cut_z_grid = cut_z_grid*1e6;
@@ -94,7 +86,6 @@ box on
 ax = gca;
 ax.LineWidth = 1.1;
 title('$\mathbf{a}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.15,0.8]);
-
 
 axes(f(2))
 plot(z_grid(1:end-1), common_suite_full.dimensionless_mean_density_gradient, 'Color','black', 'LineWidth',1.1)
@@ -119,7 +110,5 @@ box on
 ax = gca;
 ax.LineWidth = 1.1;
 title('$\mathbf{c}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.15,0.8]);
-
-
 
 set(f, 'FontName', 'Times', 'FontSize', 14)
