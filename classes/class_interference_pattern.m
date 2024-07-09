@@ -55,8 +55,8 @@ classdef class_interference_pattern< class_physical_parameters
 
             % 1. Run the parent class constructor
             obj = obj@class_physical_parameters();
+            
             % 2. Set up some of the physics parameters, possibly to default
-           
             if nargin < 2
                 obj.expansion_time = obj.default_expansion_time;
             else
@@ -97,8 +97,7 @@ classdef class_interference_pattern< class_physical_parameters
                 obj.separation_distance_d = separation_distance_d;
             end
 
-
-            % 4. Set up profile, if dimension is 2 -> relative + common
+            % 3. Set up profile, if dimension is 2 -> relative + common
             %if dimension is 1 -> relative
             if size(phase_profile_RS,1) == 2
                 obj.phase_profile_RS = phase_profile_RS;
@@ -110,18 +109,18 @@ classdef class_interference_pattern< class_physical_parameters
                 obj.common_phase_profile = zeros(size(phase_profile_RS));
             end
 
-            % 5. Grids
-            % 5.1 Input grid (matching the phase profile)
+            % 4. Grids
+            % 4.1 Input grid (matching the phase profile)
             obj.nmb_input_points_z = length(obj.relative_phase_profile);
             obj.input_grid_z =  linspace(-obj.condensate_length_Lz/2, obj.condensate_length_Lz/2, obj.nmb_input_points_z );
 
-            % 5.2 Output grid
+            % 4.2 Output grid
             obj.nmb_output_points_z = obj.nmb_input_points_z;
             obj.nmb_buffer_points_z = floor((obj.buffer_length/obj.condensate_length_Lz)*obj.nmb_output_points_z);
             obj.output_grid_z = linspace(-obj.buffer_length-obj.condensate_length_Lz/2,...
                 (obj.condensate_length_Lz/2)+obj.buffer_length, obj.nmb_output_points_z+2*obj.nmb_buffer_points_z);
             
-            %5.3 Integration grid
+            %4.3 Integration grid
             obj.integration_buffer_length = 10e-6;%10 microns buffer for integration length
             %obj.nmb_integration_points_z = floor((2.6/obj.expansion_time)+238.23); %phenomenological formula for dealing with short expansion time
             obj.nmb_integration_points_z = 600;
@@ -135,14 +134,14 @@ classdef class_interference_pattern< class_physical_parameters
             %    * obj.nmb_input_points_z );
             %obj.output_grid_x = linspace(obj.x_min, obj.x_max,...
             %    obj.nmb_output_points_x);
-            obj.output_grid_x = obj.output_grid_z;
+            obj.output_grid_x = obj.output_grid_z; %set the default output grid in x to be the same as in z
 
-            % 8. Prepare for integrals
-            % 8.1 Interpolate phase profiles using condensate grid 
+            % 6. Prepare for integrals
+            % Interpolate phase profiles using condensate grid 
             obj.get_relative_phase_z = obj.profile_interpolation_init(obj.input_grid_z, obj.relative_phase_profile);
             obj.get_common_phase_z = obj.profile_interpolation_init(obj.input_grid_z, obj.common_phase_profile);
 
-            %9.Assign insitu density for default string options
+            %7.Assign insitu density for default string options
             if isstring(insitu_density_profile)|ischar(insitu_density_profile) 
                 density = zeros(1, obj.nmb_input_points_z);
                 for i = 1:obj.nmb_input_points_z
@@ -151,13 +150,10 @@ classdef class_interference_pattern< class_physical_parameters
                 obj.insitu_density = density;
             end
             obj.get_insitu_density_z = obj.profile_interpolation_init(obj.input_grid_z, obj.insitu_density);
-            
-        
         end
-
-        %Expansion dynamics
-        %Initial width of the Gaussian - can be with or without interaction
-        %broadening
+        
+        %8. Expansion dynamics
+        %Initial width of the Gaussian - can be with or without interaction broadening
         function density_sigma_init = compute_density_sigma_init(obj, z)
             if obj.flag_interaction_broadening == 0
                 density_sigma_init = sqrt( obj.hbar/(obj.m*obj.omega) );
@@ -166,13 +162,14 @@ classdef class_interference_pattern< class_physical_parameters
             end
         end
 
+        %cloud width after expansion time t
         function density_sigma_t = compute_density_sigma_t(obj, z, time)
             if nargin <3
                 time = obj.expansion_time;
             end
             density_sigma_init = obj.compute_density_sigma_init(z);
             density_sigma_t = density_sigma_init*sqrt(1+obj.omega^2*time.^2);
-       end
+        end
         
         % single particle Green's function
         function single_particle_green_function = green_function(obj,z,zp,t)
@@ -180,8 +177,7 @@ classdef class_interference_pattern< class_physical_parameters
                 *exp( ( (obj.m)/(2*1j*obj.hbar*t) )*(z-zp).^2 );
         end
 
-        %% TOF interference functions
-
+        %% 9. TOF interference functions
         % phase prefactors used in 3D ToF expansion -> reduce the number of
         % necessary function
         function transversal_density = integrand_density_prefactor(obj,separation_distance_d,longitudinal_position_z,expansion_time)
@@ -201,7 +197,7 @@ classdef class_interference_pattern< class_physical_parameters
             tof_dependent_phase_factor = exp(((1j*pi)/(obj.compute_fringe_spacing(separation_distance_d, z))).*obj.output_grid_x );
         end
 
-        % phase prefactors used in transversal expansion
+        %phase prefactors used in transversal expansion
         function transversal_density_avg_squared = compute_density_prefactor(obj, z)
             density_prefactor_right = obj.integrand_density_prefactor(obj.separation_distance_d,z,obj.expansion_time);
             density_prefactor_left = obj.integrand_density_prefactor(-obj.separation_distance_d,z,obj.expansion_time);
@@ -212,7 +208,7 @@ classdef class_interference_pattern< class_physical_parameters
             phase_shift_d_x_t = ( (2*pi)/obj.compute_fringe_spacing(separation_distance_d, z))*(obj.output_grid_x);
         end
 
-        %Longitudinal Density profiles
+        %Longitudinal density profiles
         %Thomas-Fermi density - Inverse parabola
         function rho = inverse_parabola_density(obj, z)
             rho = obj.max_longitudinal_density*(1-(2*z/obj.condensate_length_Lz)^2)*obj.step_func((1/2)-abs(z));
@@ -226,7 +222,6 @@ classdef class_interference_pattern< class_physical_parameters
             rho = (max_density/2)*(tanh(z*1e6+falloff_param*gas_length*1e6/2)-tanh(z*1e6-falloff_param*gas_length*1e6/2));
         end
 
-      
         %In case if we want flat density profile
         function rho = flat_density(obj, z)
             rho = obj.max_longitudinal_density;
@@ -241,8 +236,8 @@ classdef class_interference_pattern< class_physical_parameters
             elseif strcmp(obj.insitu_density_str, 'Flat')
                 rho = obj.flat_density(z);
             else
-                rho = obj.inverse_parabola_density(z);
-                disp('The insitu density is not known. Using the default inverse parabola instead.')
+                rho = obj.flat_density(z);
+                disp('The insitu density is not known. Using the default flat profile instead.')
             end
         end
 
@@ -299,7 +294,7 @@ classdef class_interference_pattern< class_physical_parameters
         end
 
 
-       %Processing of the TOF interference image
+     %Processing of the TOF interference image
 
       %Normalizing the interference pattern - \int rho dx dz = N where N is
       %the total number of atoms
@@ -312,7 +307,7 @@ classdef class_interference_pattern< class_physical_parameters
       end
 
 
-        function convolved_tof = convolution2d(obj, rho_tof, convolution_scale)
+     function convolved_tof = convolution2d(obj, rho_tof, convolution_scale)
             if nargin <3
                 convolution_scale = obj.default_2d_conv_scale;
             end
