@@ -6,10 +6,11 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
         separation_distance
         expansion_time
         input_tof_data
+        x_grid
 
         %inferred
-        longitudinal_resolution
-        transversal_resolution
+        nmb_longitudinal_points
+        nmb_transversal_points
         normalized_tof_data
 
         %output
@@ -29,14 +30,20 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
     methods
 
         %% This implements the constructor
-        function obj = class_relative_phase_extraction(input_tof_data, expansion_time, flag_fit_width, separation_distance)
+        function obj = class_relative_phase_extraction(input_tof_data, expansion_time, x_grid, flag_fit_width, separation_distance)
             if nargin < 2
                 obj.expansion_time = obj.default_expansion_time;
             else
                 obj.expansion_time = expansion_time;
             end
 
-            if nargin<3
+            if nargin < 3
+                obj.x_grid = linspace(-obj.default_condensate_length/2, obj.default_condensate_length/2, size(input_tof_data,2));
+            else
+                obj.x_grid = x_grid;
+            end
+
+            if nargin<4
                 obj.flag_fit_width = 0;
             else
                 obj.flag_fit_width = flag_fit_width;
@@ -50,8 +57,8 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
             % 1. Store input data
             obj.input_tof_data = input_tof_data;
             obj.normalized_tof_data = obj.input_tof_data./max(obj.input_tof_data, [],'all');
-            obj.longitudinal_resolution = size(input_tof_data, 1);
-            obj.transversal_resolution = size(input_tof_data, 2);
+            obj.nmb_longitudinal_points = size(input_tof_data, 1);
+            obj.nmb_transversal_points = size(input_tof_data, 2);
         end
 
         %implement fitting formula independent of the interference class
@@ -72,14 +79,16 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
             calibration_slope = -obj.m*obj.separation_distance/(obj.hbar*obj.expansion_time);
             phase_guess = @(x) mod(calibration_slope*x,2*pi);
             slice_nmb = size(rho_tof_data, 1);
-            pixel_nmb_x = size(rho_tof_data,2);
+            %pixel_nmb_x = size(rho_tof_data,2);
             guess = zeros(1,slice_nmb);
+            x_min = obj.x_grid(1);
+            x_max = obj.x_grid(end);
 
             for i = 1:slice_nmb
                 %do the offsetting here
                 input_interference_slice = rho_tof_data(i,:);
                 [~, idx_max] = max(input_interference_slice);
-                slice_maxima = obj.x_min+(idx_max/pixel_nmb_x)*(obj.x_max-obj.x_min);
+                slice_maxima = x_min+(idx_max/obj.nmb_transversal_points)*(x_max-x_min);
                 guessed_phase = phase_guess(slice_maxima);
                 if guessed_phase > pi
                     guessed_phase = guessed_phase - 2*pi;
@@ -100,15 +109,14 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
             %Define an objective/cost function from the interference class
             % write a loop for slice
             
-            fitted_phase = zeros(1,obj.longitudinal_resolution);
-            amp = zeros(1,obj.longitudinal_resolution);
-            contr = zeros(1,obj.longitudinal_resolution);
-            fit_params = cell(1, obj.longitudinal_resolution);
-            reconstruced_tof = zeros(obj.longitudinal_resolution, obj.transversal_resolution);
+            fitted_phase = zeros(1,obj.nmb_longitudinal_points);
+            amp = zeros(1,obj.nmb_longitudinal_points);
+            contr = zeros(1,obj.nmb_longitudinal_points);
+            fit_params = cell(1, obj.nmb_longitudinal_points);
+            reconstruced_tof = zeros(obj.nmb_longitudinal_points, obj.nmb_transversal_points);
             
-            grid_x = linspace(obj.x_min, obj.x_max, obj.transversal_resolution);
             sigma_t = sqrt(obj.hbar/(obj.m*obj.omega))*sqrt(1+(obj.omega*obj.expansion_time)^2)*1e6; %in microns
-            gauss_width = sigma_t*ones(1,obj.longitudinal_resolution);
+            gauss_width = sigma_t*ones(1,obj.nmb_longitudinal_points);
 
             % Fmincon constraints: umplitude, contrast, phase
             if obj.flag_fit_width == 0
@@ -119,10 +127,10 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
                 search_upper_bound = [inf,2, 2*pi,inf,100];
             end
             %Do fitting for each slice of image (fixed z)
-            for i=1:obj.longitudinal_resolution
+            for i=1:obj.nmb_longitudinal_points
                 interference_slice = rho_tof_data(i,:);
                 if obj.flag_fit_width == 0
-                    fitted_interference_slice = @(p) obj.transversal_expansion_formula(grid_x, p(1), sigma_t*1e-6, p(2), p(3),p(4));
+                    fitted_interference_slice = @(p) obj.transversal_expansion_formula(obj.x_grid, p(1), sigma_t*1e-6, p(2), p(3),p(4));
                     tof_basic_cost_func = @(p) norm(interference_slice - fitted_interference_slice(p));
                     options = optimset('Display','none');
                     init_guess = [1,1,guessed_phase_profile(i),0];        
@@ -133,7 +141,7 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
                     reconstruced_tof(i,:) = fitted_interference_slice(output);
                     fit_params{i} = output;
                 else
-                    fitted_interference_slice = @(p) obj.transversal_expansion_formula(grid_x, p(1), p(5)*1e-6, p(2), p(3),p(4));
+                    fitted_interference_slice = @(p) obj.transversal_expansion_formula(obj.x_grid, p(1), p(5)*1e-6, p(2), p(3),p(4));
                     tof_basic_cost_func = @(p) norm(interference_slice - fitted_interference_slice(p));
                     options = optimset('Display','none');
                     init_guess = [1,1,guessed_phase_profile(i),0,sigma_t];        
@@ -175,12 +183,6 @@ classdef class_relative_phase_extraction <  class_physical_parameters & handle
                 fcoh = fcoh + exp(1j*phase_residue(i));
             end
             fcoh = abs(fcoh/length(phase_residue));
-        end
-
-        %z dependent cosine distance
-        function fcos = fidelity_cos_z_dependent(phase_profile_1, phase_profile_2)
-            phase_residue = phase_profile_1 - phase_profile_2;
-            fcos = cos(phase_residue);
         end
 
 
