@@ -6,6 +6,8 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
         expansion_time
         z_grid
         boundary_cut_ratio
+        boundary_condition
+        well_number
         
         %inferred intermediate variables
         mean_density_gradient
@@ -22,26 +24,61 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
 
     methods
         %1. Declare the constructor
-        function obj = class_common_phase_extraction(density_ripple, mean_density, z_grid, condensate_length, expansion_time)
-            if nargin < 3
-                obj.mean_density = 2*obj.max_longitudinal_density; 
-            else
-                obj.mean_density = mean_density;
-            end
-
+        function obj = class_common_phase_extraction(density_ripple, mean_density, z_grid, expansion_time, boundary_condition, well_nmb)
             if nargin < 4
                 obj.expansion_time = obj.default_expansion_time;
             else
                 obj.expansion_time = expansion_time;
             end
 
-            obj.z_grid = z_grid;
-            obj.condensate_length = condensate_length;
-            obj.mean_density_gradient = gradient(obj.mean_density);
-            obj.wavevec_k = 2*pi/obj.condensate_length;
+            if nargin < 5
+                obj.boundary_condition = 'Periodic';
+            else
+                obj.boundary_condition = boundary_condition;
+            end
 
-            obj.density_ripple = density_ripple;
-            obj.lt = sqrt(obj.hbar*obj.expansion_time/(2*obj.m)); 
+            if nargin < 6
+                obj.well_number = 2;
+                obj.lt = sqrt(obj.hbar*obj.expansion_time/(2*obj.m)); 
+            else
+                obj.well_number = well_nmb;
+                obj.lt = sqrt(obj.hbar*obj.expansion_time/(well_nmb*obj.m));
+            end
+
+            obj.mean_density = mean_density;
+            %obj.z_grid = z_grid;
+            obj.condensate_length = abs(z_grid(end)-z_grid(1));
+            obj.mean_density_gradient = gradient(obj.mean_density);
+
+            %Setting up boundary condition
+            if strcmp(obj.boundary_condition,'Periodic')
+                obj.wavevec_k = 2*pi/obj.condensate_length;
+                if z_grid(end) < obj.condensate_length/2
+                    shift = obj.condensate_length/2-z_grid(end);
+                    obj.z_grid = z_grid + shift;
+                elseif z_grid(end) > obj.condensate_length
+                    shift = z_grid(end) - obj.condensate_length/2;
+                    obj.z_grid = z_grid - shift;
+                else
+                    obj.z_grid = z_grid;
+                end
+            elseif strcmp(obj.boundary_condition, 'Neumann')| strcmp(obj.boundary_condition, 'Closed')
+                obj.wavevec_k = pi/obj.condensate_length;
+                obj.z_grid = z_grid - z_grid(1);
+            else 
+                disp(['Sorry, input boundary condition is unknown, ...' ...
+                    'using the default periodic boundary instead'])
+                obj.wavevec_k = 2*pi/obj.condensate_length;
+                if z_grid(end) < obj.condensate_length/2
+                    shift = obj.condensate_length/2-z_grid(end);
+                    obj.z_grid = z_grid + shift;
+                elseif z_grid(end) > obj.condensate_length
+                    shift = z_grid(end) - obj.condensate_length/2;
+                    obj.z_grid = z_grid - shift;
+                end
+            end
+
+            obj.density_ripple = density_ripple;            
             obj.dimensionless_grid = obj.z_grid/obj.lt;
             obj.dimensionless_mean_density_gradient = gradient(obj.mean_density, obj.dimensionless_grid)./obj.mean_density;
             
@@ -50,11 +87,10 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
             obj.dimensionless_density_ripple = dimensionless_density_ripple - (dz/obj.condensate_length)*sum(dimensionless_density_ripple);
             
         end
-        
 
         %2. Function to extract common phase spectrum when we ignore
         %gradient of mean density
-        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum_uniform(obj, ext_cutoff)
+        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum(obj, ext_cutoff)
 
             %initialize the outputs
             cosineCoeffs = zeros(1, ext_cutoff);
@@ -80,59 +116,14 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
             %Assigning outputs
             for n = 1:ext_cutoff
                 complex_fourier_coeffs(n) = (-2*complex_fourier_coeffs(n))/((obj.wavevec_k*n*obj.lt)^2);
-                cosineCoeffs(n) = real(complex_fourier_coeffs(n));
-                sineCoeffs(n) = imag(complex_fourier_coeffs(n));
-            end
-        end
-
-        %Function to interpolate ODE coefficients corresponding to
-        %continuity equation
-        function [A,B] = interp_ode_coefficients(obj, nu)
-            A = interp1(obj.dimensionless_grid,obj.dimensionless_mean_density_gradient, nu);
-            B = interp1(obj.dimensionless_grid, obj.dimensionless_density_ripple,  nu);
-        end
-        %Function to setup continuity equation - not used in the current
-        %manuscript
-        function dxdnu = continuity_eqn(obj, nu, x)
-            [A,B] = obj.interp_ode_coefficients(nu);
-            dxdnu =-A*x+B;
-        end
-
-        %Solving for velocity profile
-        function [vel_profile, z_grid] = extract_common_velocity(obj, nugrid, boundary_condition)
-            if nargin < 2
-                nugrid= obj.dimensionless_grid;
-            end
-
-            if nargin < 3
-                boundary_condition = 0;
-            end 
-            [nu,x] = ode45(@(nu,x) obj.continuity_eqn(nu, x), nugrid, boundary_condition);
-            z_grid = nu*obj.lt;
-            vel_profile = x/obj.lt;
-        end
-
-        %Solving for common phase spectrum from the obtained velocity profile 
-        % assuming the absence of zero mode
-        function [cosineCoeffs, sineCoeffs] = extract_com_spectrum_continuity(obj, ext_cutoff)
-            [vel_profile, intermediate_z_grid] = obj.extract_common_velocity();
-            
-            
-            %Eliminate zero mode in the velocity profile
-            dz = intermediate_z_grid(2)-intermediate_z_grid(1);
-            vel_profile = vel_profile - (dz/obj.condensate_length)*sum(vel_profile);
-
-            cosineCoeffs = zeros(1, ext_cutoff);
-            sineCoeffs = zeros(1,ext_cutoff);
-            %Perform Fourier analysis of the common velocity
-            for p = 1:ext_cutoff
-                fp = 0;
-                for i = 1:length(intermediate_z_grid)
-                    fp = fp + vel_profile(i)*exp(-1j*p*obj.wavevec_k*intermediate_z_grid(i));
+                if strcmp(obj.boundary_condition, 'Neumann')
+                    cosineCoeffs(n) = real(complex_fourier_coeffs(n));
+                elseif strcmp(obj.boundary_condition, 'Closed')
+                    sineCoeffs(n) = imag(complex_fourier_coeffs(n));
+                elseif strcmp(obj.boundary_condition, 'Periodic')
+                    cosineCoeffs(n) = real(complex_fourier_coeffs(n));
+                    sineCoeffs(n) = imag(complex_fourier_coeffs(n));
                 end
-                fp = fp*(dz/(pi*p));
-                cosineCoeffs(p) = imag(fp);
-                sineCoeffs(p) = real(fp);
             end
         end
 
@@ -156,6 +147,17 @@ classdef class_common_phase_extraction < class_physical_parameters & handle
             end        
         end
 
+        function out_com_phase = fdm_com_phase(obj, phase_init)
+            dz = abs(obj.z_grid(2) - obj.z_grid(1));
+            prefactor = (2*obj.m/(obj.hbar*obj.expansion_time))*(dz)^2;
+            out_com_phase = zeros(1,length(obj.z_grid));
+            out_com_phase(1) = phase_init(1);
+            out_com_phase(2) = phase_init(2);
+            for i = 3:length(obj.z_grid)
+                disp(i)
+                out_com_phase(i) = 2*out_com_phase(i)-out_com_phase(i-1) + prefactor*obj.dimensionless_density_ripple(i);
+            end
+        end
     end %End method
     methods (Static)
         %coherence factor fidelity
