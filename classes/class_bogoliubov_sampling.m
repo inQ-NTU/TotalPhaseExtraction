@@ -9,35 +9,42 @@ classdef class_bogoliubov_sampling < class_physical_parameters & handle
         temperature
         mean_density
         condensate_length
-        coupling_strength_J
+        tunneling_strength_J
         wavevec_k
         g_coupling
         phase_samples
         density_fluct_samples
+        scaling_factor
     end
 
     methods
         %1. Generate the constructor
-        function obj = class_bogoliubov_sampling(temperature, mean_density_single_condensate, condensate_length, coupling_J)
+        function obj = class_bogoliubov_sampling(temperature, mean_density_single_condensate, scaling_factor, condensate_length, tunneling_J)
             % Run the parent class constructor
             obj = obj@class_physical_parameters();
             % Set up some of the physics parameters, possibly to default
             if nargin < 2
-                obj.mean_density = obj.max_longitudinal_density;
+                obj.mean_density = obj.default_mean_density;
             else
                 obj.mean_density = mean_density_single_condensate;
             end
 
             if nargin < 3
+                obj.scaling_factor = 1;
+            else
+                obj.scaling_factor = scaling_factor;
+            end
+
+            if nargin < 4
                 obj.condensate_length = obj.default_condensate_length;
             else
                 obj.condensate_length = condensate_length;
             end
 
-            if nargin < 4
-                obj.coupling_strength_J = obj.default_coupling_J;
+            if nargin < 5
+                obj.tunneling_strength_J = obj.default_tunneling_strength_J;
             else
-                obj.coupling_strength_J = coupling_J;
+                obj.tunneling_strength_J = tunneling_J;
             end
             
             obj.temperature = temperature;
@@ -54,7 +61,7 @@ classdef class_bogoliubov_sampling < class_physical_parameters & handle
             end
             %Define the grid and the sampling prefactors
             z_grid = linspace(-obj.condensate_length/2, obj.condensate_length/2, pixnumz);
-            tunneling_energy = 2*obj.coupling_strength_J*obj.hbar;
+            tunneling_energy = 2*obj.tunneling_strength_J*obj.hbar;
             interaction_energy = 2*obj.g_coupling*obj.mean_density;
 
             %Initialize phase samples
@@ -83,6 +90,8 @@ classdef class_bogoliubov_sampling < class_physical_parameters & handle
                     end
                 end
             end
+            phase_samples = obj.scaling_factor*phase_samples;
+            density_fluct_samples = obj.scaling_factor*density_fluct_samples;
             obj.phase_samples = phase_samples;
             obj.density_fluct_samples = density_fluct_samples;
         end
@@ -117,8 +126,35 @@ classdef class_bogoliubov_sampling < class_physical_parameters & handle
                 end
             end
             prefactor = (2*obj.mean_density*obj.condensate_length)^(-1);
-            phase_var = phase_var*prefactor;
+            phase_var = phase_var*prefactor*(obj.scaling_factor)^2;
             corr = exp(-phase_var/2);
         end
     end %end of methods
+
+    methods (Static)
+        function [cosineCoeffs, sineCoeffs] = compute_fourier_coeffs(input_data, max_n_fourier)
+            %data dimension
+            data_len = size(input_data, 2);
+            num_samples = size(input_data, 1);
+
+            %initialized  the output
+            cosineCoeffs =zeros(num_samples, max_n_fourier);
+            sineCoeffs = zeros(num_samples, max_n_fourier);
+            
+            for i = 1:num_samples
+                data = input_data(i,:);
+                data = data - (sum(data)/data_len);
+                complexCoeffs = zeros(1, max_n_fourier);
+                for q = 1:max_n_fourier
+                    for u = 1:data_len
+                        complexCoeffs(q) = complexCoeffs(q)+data(u)*exp(1j*(2*pi/data_len)*q*u);
+                    end
+                end
+                complexCoeffs = complexCoeffs*(2/data_len);
+                cosineCoeffs(i,:) = real(complexCoeffs);
+                sineCoeffs(i,:) = imag(complexCoeffs);
+            end
+        end
+    
+    end
 end %end of class
