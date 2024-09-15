@@ -13,7 +13,7 @@ for i = 1:4
     tic
     for j = 1:length(bootstrap_datasets)
         bootstrap_index = bootstrap_index + 1
-        ext_com_phases = bootstrap_datasets{j};
+        ext_com_phases = bootstrap_datasets{j}';
         corr_suite = class_1d_correlation(ext_com_phases);
         g4_disconnected{j} = corr_suite.wick_four_point_correlation();
         g4_full{j} = corr_suite.correlation_func(4);
