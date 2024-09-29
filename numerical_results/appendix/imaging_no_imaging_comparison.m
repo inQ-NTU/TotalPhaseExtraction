@@ -53,6 +53,8 @@ ax = gca;
 ax.YAxis(2).Exponent = -2;
 ax.YAxis(2).Color = 'red';
 title('$\mathbf{a}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.15,0.8]);
+ax = gca;
+ax.LineWidth = 1.05;
 
 
 axes(f(2))
@@ -63,6 +65,8 @@ plot(grid_dens, com_phase(chosen_idx,:), 'Color','black', 'LineStyle','-.','Line
 xlabel('$z\; (\rm \mu m)$', 'Interpreter','latex')
 ylabel('$\phi_+(z)$', 'Interpreter','latex')
 title('$\mathbf{b}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.1,0.8]);
+ax = gca;
+ax.LineWidth = 1.05;
 
 
 axes(f(3))
@@ -75,6 +79,8 @@ xline(40, 'LineStyle','--', 'LineWidth',1.05)
 xlabel('$z\; (\rm \mu m)$', 'Interpreter','latex')
 ylabel('$C_+(z)$', 'Interpreter','latex')
 title('$\mathbf{c}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.15,0.8]);
+ax = gca;
+ax.LineWidth = 1.05;
 
 
 axes(f(4))
@@ -86,5 +92,7 @@ legend('With Imaging', 'Without Imaging', 'Input', 'FontSize', 12)
 xlabel('Mode index $p$', 'Interpreter', 'latex')
 ylabel('$\langle |A_p|^2\rangle$', 'Interpreter','latex')
 title('$\mathbf{d}$','FontName','Times','Color','black','Units', 'normalized','Interpreter','latex','Position',[0.1,0.8]);
+ax = gca;
+ax.LineWidth = 1.05;
 
 set(f, 'FontName', 'Times', 'FontSize', 14)
